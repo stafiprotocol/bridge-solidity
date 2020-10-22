@@ -258,6 +258,16 @@ contract Bridge is Pausable, AccessControl, SafeMath {
     }
 
     /**
+        @notice Changes expiry.
+        @notice Only callable by admin.
+        @param newExpiry Value {_expiry} will be updated to.
+     */
+    function adminChangeExpiry(uint256 newExpiry) external onlyAdmin {
+        require(_expiry != newExpiry, "Current expiry is equal to new expiry");
+        _expiry = newExpiry;
+    }
+
+    /**
         @notice Changes deposit fee.
         @notice Only callable by admin.
         @param newFee Value {_fee} will be updated to.
