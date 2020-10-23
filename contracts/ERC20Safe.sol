@@ -7,7 +7,7 @@ import "./openzeppelin/ERC20Burnable.sol";
 
 /**
     @title Manages deposited ERC20s.
-    @author ChainSafe Systems.
+    @author Stafi Protocol.
     @notice This contract is intended to be used with ERC20Handler contract.
  */
 contract ERC20Safe {

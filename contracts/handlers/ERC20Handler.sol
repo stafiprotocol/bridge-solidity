@@ -7,7 +7,7 @@ import "../ERC20Safe.sol";
 
 /**
     @title Handles ERC20 deposits and deposit executions.
-    @author ChainSafe Systems.
+    @author Stafi Protocol.
     @notice This contract is intended to be used with the Bridge contract.
  */
 contract ERC20Handler is IDepositExecute, HandlerHelpers, ERC20Safe {

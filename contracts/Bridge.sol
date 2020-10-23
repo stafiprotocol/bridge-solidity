@@ -10,7 +10,7 @@ import "./interfaces/IGenericHandler.sol";
 
 /**
     @title Facilitates deposits, creation and votiing of deposit proposals, and deposit executions.
-    @author ChainSafe Systems.
+    @author Stafi Protocol.
  */
 contract Bridge is Pausable, AccessControl, SafeMath {
 

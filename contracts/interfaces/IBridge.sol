@@ -2,7 +2,7 @@ pragma solidity 0.6.4;
 
 /**
     @title Interface for Bridge contract.
-    @author ChainSafe Systems.
+    @author Stafi Protocol.
  */
 interface IBridge {
     /**

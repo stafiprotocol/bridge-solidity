@@ -4,7 +4,7 @@ import "../interfaces/IERCHandler.sol";
 
 /**
     @title Function used across handler contracts.
-    @author ChainSafe Systems.
+    @author Stafi Protocol.
     @notice This contract is intended to be used with the Bridge contract.
  */
 contract HandlerHelpers is IERCHandler {

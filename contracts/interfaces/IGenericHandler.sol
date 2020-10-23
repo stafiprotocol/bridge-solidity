@@ -2,7 +2,7 @@ pragma solidity 0.6.4;
 
 /**
     @title Interface for handler that handles generic deposits and deposit executions.
-    @author ChainSafe Systems.
+    @author Stafi Protocol.
  */
 interface IGenericHandler {
     /**
