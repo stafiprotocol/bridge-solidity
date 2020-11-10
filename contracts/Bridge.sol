@@ -1,9 +1,9 @@
 pragma solidity 0.6.4;
 pragma experimental ABIEncoderV2;
 
-import "./openzeppelin/AccessControl.sol";
-import "./utils/Pausable.sol";
-import "./utils/SafeMath.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
+import "./utils/SimpleSafeMath.sol";
 import "./interfaces/IDepositExecute.sol";
 import "./interfaces/IERCHandler.sol";
 import "./interfaces/IGenericHandler.sol";
@@ -12,7 +12,7 @@ import "./interfaces/IGenericHandler.sol";
     @title Facilitates deposits, creation and votiing of deposit proposals, and deposit executions.
     @author Stafi Protocol.
  */
-contract Bridge is Pausable, AccessControl, SafeMath {
+contract Bridge is Pausable, AccessControl, SimpleSafeMath {
 
     uint8   public _chainID;
     uint256 public _relayerThreshold;
@@ -68,31 +68,19 @@ contract Bridge is Pausable, AccessControl, SafeMath {
     bytes32 public constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
 
     modifier onlyAdmin() {
-        _onlyAdmin();
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "sender doesn't have admin role");
         _;
     }
 
     modifier onlyAdminOrRelayer() {
-        _onlyAdminOrRelayer();
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(RELAYER_ROLE, msg.sender),
+            "sender is not relayer or admin");
         _;
     }
 
     modifier onlyRelayers() {
-        _onlyRelayers();
-        _;
-    }
-
-    function _onlyAdminOrRelayer() private view {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(RELAYER_ROLE, msg.sender),
-            "sender is not relayer or admin");
-    }
-
-    function _onlyAdmin() private view {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "sender doesn't have admin role");
-    }
-
-    function _onlyRelayers() private view {
         require(hasRole(RELAYER_ROLE, msg.sender), "sender doesn't have relayer role");
+        _;
     }
 
     /**
@@ -110,7 +98,8 @@ contract Bridge is Pausable, AccessControl, SafeMath {
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
-        for (uint i; i < initialRelayers.length; i++) {
+        uint256 initialRelayerCount = initialRelayers.length;
+        for (uint256 i; i < initialRelayerCount; i++) {
             grantRole(RELAYER_ROLE, initialRelayers[i]);
         }
 
@@ -435,7 +424,8 @@ contract Bridge is Pausable, AccessControl, SafeMath {
         @param amounts Array of amonuts to transfer to {addrs}.
      */
     function transferFunds(address payable[] calldata addrs, uint[] calldata amounts) external onlyAdmin {
-        for (uint i = 0; i < addrs.length; i++) {
+        uint256 addrCount = addrs.length;
+        for (uint256 i = 0; i < addrCount; i++) {
             addrs[i].transfer(amounts[i]);
         }
     }
