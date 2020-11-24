@@ -1,4 +1,6 @@
-pragma solidity 0.6.4;
+pragma solidity 0.6.12;
+
+// SPDX-License-Identifier: GPL-3.0-only
 
 /**
     @title Interface for handler contracts that support deposits and deposit executions.

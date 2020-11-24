@@ -1,4 +1,6 @@
-pragma solidity 0.6.4;
+pragma solidity 0.6.12;
+
+// SPDX-License-Identifier: GPL-3.0-only
 
 import "../interfaces/IERCHandler.sol";
 
@@ -50,7 +52,7 @@ contract HandlerHelpers is IERCHandler {
         to true.
         @param contractAddress Address of contract to be used when making or executing deposits.
      */
-    function setBurnable(address contractAddress) external override onlyBridge{
+    function setBurnable(address contractAddress) external override onlyBridge {
         _setBurnable(contractAddress);
     }
 

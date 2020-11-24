@@ -1,4 +1,6 @@
-pragma solidity 0.6.4;
+pragma solidity 0.6.12;
+
+// SPDX-License-Identifier: GPL-3.0-only
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";

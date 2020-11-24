@@ -1,5 +1,7 @@
-pragma solidity 0.6.4;
+pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
+
+// SPDX-License-Identifier: GPL-3.0-only
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
@@ -9,7 +11,7 @@ import "./interfaces/IERCHandler.sol";
 import "./interfaces/IGenericHandler.sol";
 
 /**
-    @title Facilitates deposits, creation and votiing of deposit proposals, and deposit executions.
+    @title Facilitates deposits, creation and voting of deposit proposals, and deposit executions.
     @author Stafi Protocol.
  */
 contract Bridge is Pausable, AccessControl, SimpleSafeMath {
@@ -42,7 +44,7 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
     // destinationChainID + depositNonce => dataHash => relayerAddress => bool
     mapping(uint72 => mapping(bytes32 => mapping(address => bool))) public _hasVotedOnProposal;
 
-    event RelayerThresholdChanged(uint indexed newThreshold);
+    event RelayerThresholdChanged(uint256 indexed newThreshold);
     event RelayerAdded(address indexed relayer);
     event RelayerRemoved(address indexed relayer);
     event Deposit(
@@ -90,7 +92,7 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
         @param initialRelayers Addresses that should be initially granted the relayer role.
         @param initialRelayerThreshold Number of votes needed for a deposit proposal to be considered passed.
      */
-    constructor (uint8 chainID, address[] memory initialRelayers, uint initialRelayerThreshold, uint256 fee, uint256 expiry) public {
+    constructor (uint8 chainID, address[] memory initialRelayers, uint256 initialRelayerThreshold, uint256 fee, uint256 expiry) public {
         _chainID = chainID;
         _relayerThreshold = initialRelayerThreshold;
         _fee = fee;
@@ -146,7 +148,7 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
         @param newThreshold Value {_relayerThreshold} will be changed to.
         @notice Emits {RelayerThresholdChanged} event.
      */
-    function adminChangeRelayerThreshold(uint newThreshold) external onlyAdmin {
+    function adminChangeRelayerThreshold(uint256 newThreshold) external onlyAdmin {
         _relayerThreshold = newThreshold;
         emit RelayerThresholdChanged(newThreshold);
     }
@@ -204,11 +206,12 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
         bytes32 resourceID,
         address contractAddress,
         bytes4 depositFunctionSig,
+        uint256 depositFunctionDepositerOffset,
         bytes4 executeFunctionSig
     ) external onlyAdmin {
         _resourceIDToHandlerAddress[resourceID] = handlerAddress;
         IGenericHandler handler = IGenericHandler(handlerAddress);
-        handler.setResource(resourceID, contractAddress, depositFunctionSig, executeFunctionSig);
+        handler.setResource(resourceID, contractAddress, depositFunctionSig, depositFunctionDepositerOffset, executeFunctionSig);
     }
 
     /**
@@ -261,7 +264,7 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
         @notice Only callable by admin.
         @param newFee Value {_fee} will be updated to.
      */
-    function adminChangeFee(uint newFee) external onlyAdmin {
+    function adminChangeFee(uint256 newFee) external onlyAdmin {
         require(_fee != newFee, "Current fee is equal to new fee");
         _fee = newFee;
     }
@@ -348,8 +351,6 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
             } else {
                 require(dataHash == proposal._dataHash, "datahash mismatch");
                 proposal._yesVotes.push(msg.sender);
-
-
             }
 
         }
