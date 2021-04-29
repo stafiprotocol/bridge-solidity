@@ -17,12 +17,6 @@ import "./interfaces/IGenericHandler.sol";
     @author Stafi Protocol.
  */
 contract Bridge is Pausable, AccessControl, SafeMath {
-
-    // uint8   public _chainID;
-    // uint256 public _relayerThreshold;
-    // uint256 public _totalProposals;
-    // uint256 public _fee;
-    // uint256 public _expiry;
     using SafeCast for *;
 
     // Limit relayers number because proposal can fit only so much votes
@@ -35,14 +29,6 @@ contract Bridge is Pausable, AccessControl, SafeMath {
 
     enum ProposalStatus {Inactive, Active, Passed, Executed, Cancelled}
 
-    // struct Proposal {
-    //     bytes32 _resourceID;
-    //     bytes32 _dataHash;
-    //     address[] _yesVotes;
-    //     address[] _noVotes;
-    //     ProposalStatus _status;
-    //     uint256 _proposedBlock;
-    // }
     struct Proposal {
         ProposalStatus _status;
         uint200 _yesVotes;      // bitmap, 200 maximum votes
@@ -56,8 +42,7 @@ contract Bridge is Pausable, AccessControl, SafeMath {
     mapping(bytes32 => address) public _resourceIDToHandlerAddress;
     // destinationChainID + depositNonce => dataHash => Proposal
     mapping(uint72 => mapping(bytes32 => Proposal)) public _proposals;
-    // destinationChainID + depositNonce => dataHash => relayerAddress => bool
-    // mapping(uint72 => mapping(bytes32 => mapping(address => bool))) public _hasVotedOnProposal;
+    
 
     event RelayerThresholdChanged(uint256 indexed newThreshold);
     event RelayerAdded(address indexed relayer);
@@ -83,21 +68,6 @@ contract Bridge is Pausable, AccessControl, SafeMath {
 
     bytes32 public constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
 
-    // modifier onlyAdmin() {
-    //     require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "sender doesn't have admin role");
-    //     _;
-    // }
-
-    // modifier onlyAdminOrRelayer() {
-    //     require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(RELAYER_ROLE, msg.sender),
-    //         "sender is not relayer or admin");
-    //     _;
-    // }
-
-    // modifier onlyRelayers() {
-    //     require(hasRole(RELAYER_ROLE, msg.sender), "sender doesn't have relayer role");
-    //     _;
-    // }
     modifier onlyAdmin() {
         _onlyAdmin();
         _;
@@ -149,10 +119,10 @@ contract Bridge is Pausable, AccessControl, SafeMath {
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
-        for (uint256 i; i < initialRelayers.length; i++) {
+        uint256 initialRelayerCount = initialRelayers.length;
+        for (uint256 i; i < initialRelayerCount; i++) {
             grantRole(RELAYER_ROLE, initialRelayers[i]);
         }
-
     }
 
     /**
@@ -310,15 +280,6 @@ contract Bridge is Pausable, AccessControl, SafeMath {
         return AccessControl.getRoleMemberCount(RELAYER_ROLE);
     }
 
-    // /**
-    //     @notice Changes expiry.
-    //     @notice Only callable by admin.
-    //     @param newExpiry Value {_expiry} will be updated to.
-    //  */
-    // function adminChangeExpiry(uint256 newExpiry) external onlyAdmin {
-    //     require(_expiry != newExpiry, "Current expiry is equal to new expiry");
-    //     _expiry = newExpiry;
-    // }
 
     /**
         @notice Changes deposit fee.
@@ -477,7 +438,8 @@ contract Bridge is Pausable, AccessControl, SafeMath {
         @param amounts Array of amonuts to transfer to {addrs}.
      */
     function transferFunds(address payable[] calldata addrs, uint[] calldata amounts) external onlyAdmin {
-        for (uint256 i = 0; i < addrs.length; i++) {
+        uint256 addrCount = addrs.length;
+        for (uint256 i = 0; i < addrCount; i++) {
             addrs[i].transfer(amounts[i]);
         }
     }
