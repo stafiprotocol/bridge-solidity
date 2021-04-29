@@ -3,9 +3,11 @@ pragma experimental ABIEncoderV2;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
-import "./utils/SimpleSafeMath.sol";
+
+import "./utils/SafeMath.sol";
+import "./utils/SafeCast.sol";
+import "./utils/AccessControl.sol";
+import "./utils/Pausable.sol";
 import "./interfaces/IDepositExecute.sol";
 import "./interfaces/IERCHandler.sol";
 import "./interfaces/IGenericHandler.sol";
@@ -14,23 +16,38 @@ import "./interfaces/IGenericHandler.sol";
     @title Facilitates deposits, creation and voting of deposit proposals, and deposit executions.
     @author Stafi Protocol.
  */
-contract Bridge is Pausable, AccessControl, SimpleSafeMath {
+contract Bridge is Pausable, AccessControl, SafeMath {
+
+    // uint8   public _chainID;
+    // uint256 public _relayerThreshold;
+    // uint256 public _totalProposals;
+    // uint256 public _fee;
+    // uint256 public _expiry;
+    using SafeCast for *;
+
+    // Limit relayers number because proposal can fit only so much votes
+    uint256 constant public MAX_RELAYERS = 200;
 
     uint8   public _chainID;
-    uint256 public _relayerThreshold;
-    uint256 public _totalProposals;
-    uint256 public _fee;
-    uint256 public _expiry;
+    uint8   public _relayerThreshold;
+    uint128 public _fee;
+    uint40  public _expiry;
 
     enum ProposalStatus {Inactive, Active, Passed, Executed, Cancelled}
 
+    // struct Proposal {
+    //     bytes32 _resourceID;
+    //     bytes32 _dataHash;
+    //     address[] _yesVotes;
+    //     address[] _noVotes;
+    //     ProposalStatus _status;
+    //     uint256 _proposedBlock;
+    // }
     struct Proposal {
-        bytes32 _resourceID;
-        bytes32 _dataHash;
-        address[] _yesVotes;
-        address[] _noVotes;
         ProposalStatus _status;
-        uint256 _proposedBlock;
+        uint200 _yesVotes;      // bitmap, 200 maximum votes
+        uint8   _yesVotesTotal;
+        uint40  _proposedBlock; // 1099511627775 maximum block
     }
 
     // destinationChainID => number of deposits
@@ -40,7 +57,7 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
     // destinationChainID + depositNonce => dataHash => Proposal
     mapping(uint72 => mapping(bytes32 => Proposal)) public _proposals;
     // destinationChainID + depositNonce => dataHash => relayerAddress => bool
-    mapping(uint72 => mapping(bytes32 => mapping(address => bool))) public _hasVotedOnProposal;
+    // mapping(uint72 => mapping(bytes32 => mapping(address => bool))) public _hasVotedOnProposal;
 
     event RelayerThresholdChanged(uint256 indexed newThreshold);
     event RelayerAdded(address indexed relayer);
@@ -54,7 +71,6 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
         uint8           indexed originChainID,
         uint64          indexed depositNonce,
         ProposalStatus  indexed status,
-        bytes32 resourceID,
         bytes32 dataHash
     );
 
@@ -62,25 +78,60 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
         uint8   indexed originChainID,
         uint64  indexed depositNonce,
         ProposalStatus indexed status,
-        bytes32 resourceID
+        bytes32 dataHash
     );
 
     bytes32 public constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
 
+    // modifier onlyAdmin() {
+    //     require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "sender doesn't have admin role");
+    //     _;
+    // }
+
+    // modifier onlyAdminOrRelayer() {
+    //     require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(RELAYER_ROLE, msg.sender),
+    //         "sender is not relayer or admin");
+    //     _;
+    // }
+
+    // modifier onlyRelayers() {
+    //     require(hasRole(RELAYER_ROLE, msg.sender), "sender doesn't have relayer role");
+    //     _;
+    // }
     modifier onlyAdmin() {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "sender doesn't have admin role");
+        _onlyAdmin();
         _;
     }
 
     modifier onlyAdminOrRelayer() {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(RELAYER_ROLE, msg.sender),
-            "sender is not relayer or admin");
+        _onlyAdminOrRelayer();
         _;
     }
 
     modifier onlyRelayers() {
-        require(hasRole(RELAYER_ROLE, msg.sender), "sender doesn't have relayer role");
+        _onlyRelayers();
         _;
+    }
+
+    function _onlyAdminOrRelayer() private view {
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(RELAYER_ROLE, msg.sender),
+            "sender is not relayer or admin");
+    }
+
+    function _onlyAdmin() private view {
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "sender doesn't have admin role");
+    }
+
+    function _onlyRelayers() private view {
+        require(hasRole(RELAYER_ROLE, msg.sender), "sender doesn't have relayer role");
+    }
+
+    function _relayerBit(address relayer) private view returns(uint) {
+        return uint(1) << sub(AccessControl.getRoleMemberIndex(RELAYER_ROLE, relayer), 1);
+    }
+
+    function _hasVoted(Proposal memory proposal, address relayer) private view returns(bool) {
+        return (_relayerBit(relayer) & uint(proposal._yesVotes)) > 0;
     }
 
     /**
@@ -92,18 +143,29 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
      */
     constructor (uint8 chainID, address[] memory initialRelayers, uint256 initialRelayerThreshold, uint256 fee, uint256 expiry) public {
         _chainID = chainID;
-        _relayerThreshold = initialRelayerThreshold;
-        _fee = fee;
-        _expiry = expiry;
+        _relayerThreshold = initialRelayerThreshold.toUint8();
+        _fee = fee.toUint128();
+        _expiry = expiry.toUint40();
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
-        uint256 initialRelayerCount = initialRelayers.length;
-        for (uint256 i; i < initialRelayerCount; i++) {
+        for (uint256 i; i < initialRelayers.length; i++) {
             grantRole(RELAYER_ROLE, initialRelayers[i]);
         }
 
     }
+
+    /**
+        @notice Returns true if {relayer} has voted on {destNonce} {dataHash} proposal.
+        @notice Naming left unchanged for backward compatibility.
+        @param destNonce destinationChainID + depositNonce of the proposal.
+        @param dataHash Hash of data to be provided when deposit proposal is executed.
+        @param relayer Address to check.
+     */
+    function _hasVotedOnProposal(uint72 destNonce, bytes32 dataHash, address relayer) public view returns(bool) {
+        return _hasVoted(_proposals[destNonce][dataHash], relayer);
+    }
+
 
     /**
         @notice Returns true if {relayer} has the relayer role.
@@ -147,7 +209,7 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
         @notice Emits {RelayerThresholdChanged} event.
      */
     function adminChangeRelayerThreshold(uint256 newThreshold) external onlyAdmin {
-        _relayerThreshold = newThreshold;
+        _relayerThreshold = newThreshold.toUint8();
         emit RelayerThresholdChanged(newThreshold);
     }
 
@@ -160,6 +222,7 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
      */
     function adminAddRelayer(address relayerAddress) external {
         require(!hasRole(RELAYER_ROLE, relayerAddress), "addr already has relayer role!");
+        require(_totalRelayers() < MAX_RELAYERS, "relayers limit reached");
         grantRole(RELAYER_ROLE, relayerAddress);
         emit RelayerAdded(relayerAddress);
     }
@@ -243,19 +306,19 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
         @notice Returns total relayers number.
         @notice Added for backwards compatibility.
      */
-    function _totalRelayers() external view returns (uint) {
+    function _totalRelayers() public view returns (uint) {
         return AccessControl.getRoleMemberCount(RELAYER_ROLE);
     }
 
-    /**
-        @notice Changes expiry.
-        @notice Only callable by admin.
-        @param newExpiry Value {_expiry} will be updated to.
-     */
-    function adminChangeExpiry(uint256 newExpiry) external onlyAdmin {
-        require(_expiry != newExpiry, "Current expiry is equal to new expiry");
-        _expiry = newExpiry;
-    }
+    // /**
+    //     @notice Changes expiry.
+    //     @notice Only callable by admin.
+    //     @param newExpiry Value {_expiry} will be updated to.
+    //  */
+    // function adminChangeExpiry(uint256 newExpiry) external onlyAdmin {
+    //     require(_expiry != newExpiry, "Current expiry is equal to new expiry");
+    //     _expiry = newExpiry;
+    // }
 
     /**
         @notice Changes deposit fee.
@@ -264,7 +327,7 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
      */
     function adminChangeFee(uint256 newFee) external onlyAdmin {
         require(_fee != newFee, "Current fee is equal to new fee");
-        _fee = newFee;
+        _fee = newFee.toUint128();
     }
 
     /**
@@ -321,47 +384,39 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
         address handler = _resourceIDToHandlerAddress[resourceID];
         bytes32 dataHash = keccak256(abi.encodePacked(handler, data));
         uint72 nonceAndID = (uint72(depositNonce) << 8) | uint72(chainID);
-        Proposal storage proposal = _proposals[nonceAndID][dataHash];
+        Proposal memory proposal = _proposals[nonceAndID][dataHash];
 
         require(_resourceIDToHandlerAddress[resourceID] != address(0), "no handler for resourceID");
         require(uint(proposal._status) <= 1, "proposal already passed/executed/cancelled");
-        require(!_hasVotedOnProposal[nonceAndID][dataHash][msg.sender], "relayer already voted");
+        require(!_hasVoted(proposal, msg.sender), "relayer already voted");
 
-        if (uint(proposal._status) == 0) {
-            ++_totalProposals;
-            _proposals[nonceAndID][dataHash] = Proposal({
-                _resourceID : resourceID,
-                _dataHash : dataHash,
-                _yesVotes : new address[](1),
-                _noVotes : new address[](0),
-                _status : ProposalStatus.Active,
-                _proposedBlock : block.number
+        if (proposal._status == ProposalStatus.Inactive) {
+            proposal = Proposal({
+                    _status : ProposalStatus.Active,
+                    _yesVotes : 0,
+                    _yesVotesTotal : 0,
+                    _proposedBlock : uint40(block.number) // Overflow is desired.
                 });
-
-            proposal._yesVotes[0] = msg.sender;
-            emit ProposalEvent(chainID, depositNonce, ProposalStatus.Active, resourceID, dataHash);
-        } else {
-            if (sub(block.number, proposal._proposedBlock) > _expiry) {
-                // if the number of blocks that has passed since this proposal was
-                // submitted exceeds the expiry threshold set, cancel the proposal
-                proposal._status = ProposalStatus.Cancelled;
-                emit ProposalEvent(chainID, depositNonce, ProposalStatus.Cancelled, resourceID, dataHash);
-            } else {
-                require(dataHash == proposal._dataHash, "datahash mismatch");
-                proposal._yesVotes.push(msg.sender);
-            }
-
+            emit ProposalEvent(chainID, depositNonce, ProposalStatus.Active, dataHash);
+        } else if (uint40(sub(block.number, proposal._proposedBlock)) > _expiry) {
+            // if the number of blocks that has passed since this proposal was
+            // submitted exceeds the expiry threshold set, cancel the proposal
+            proposal._status = ProposalStatus.Cancelled;
+            emit ProposalEvent(chainID, depositNonce, ProposalStatus.Cancelled, dataHash);
         }
+
         if (proposal._status != ProposalStatus.Cancelled) {
-            _hasVotedOnProposal[nonceAndID][dataHash][msg.sender] = true;
-            emit ProposalVote(chainID, depositNonce, proposal._status, resourceID);
+            proposal._yesVotes = (proposal._yesVotes | _relayerBit(msg.sender)).toUint200();
+            proposal._yesVotesTotal++; // TODO: check if bit counting is cheaper.
+            emit ProposalVote(chainID, depositNonce, proposal._status, dataHash);
 
             // Finalize if _relayerThreshold has been reached
-            if (proposal._yesVotes.length >= _relayerThreshold) {
+            if (proposal._yesVotesTotal >= _relayerThreshold) {
                 proposal._status = ProposalStatus.Passed;
                 executeProposal(chainID, depositNonce, data, resourceID);
             }
         }
+        _proposals[nonceAndID][dataHash] = proposal;
 
     }
 
@@ -376,15 +431,16 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
      */
     function cancelProposal(uint8 chainID, uint64 depositNonce, bytes32 dataHash) public onlyAdminOrRelayer {
         uint72 nonceAndID = (uint72(depositNonce) << 8) | uint72(chainID);
-        Proposal storage proposal = _proposals[nonceAndID][dataHash];
+        Proposal memory proposal = _proposals[nonceAndID][dataHash];
         ProposalStatus currentStatus = proposal._status;
 
         require(currentStatus == ProposalStatus.Active || currentStatus == ProposalStatus.Passed,
             "Proposal cannot be cancelled");
-        require(sub(block.number, proposal._proposedBlock) > _expiry, "Proposal not at expiry threshold");
+        require(uint40(sub(block.number, proposal._proposedBlock))> _expiry, "Proposal not at expiry threshold");
 
         proposal._status = ProposalStatus.Cancelled;
-        emit ProposalEvent(chainID, depositNonce, ProposalStatus.Cancelled, proposal._resourceID, dataHash);
+        _proposals[nonceAndID][dataHash] = proposal;
+        emit ProposalEvent(chainID, depositNonce, ProposalStatus.Cancelled, dataHash);
     }
 
     /**
@@ -399,20 +455,19 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
         @notice Emits {ProposalEvent} event with status {Executed}.
      */
     function executeProposal(uint8 chainID, uint64 depositNonce, bytes calldata data, bytes32 resourceID) internal whenNotPaused {
-            address handler = _resourceIDToHandlerAddress[resourceID];
-            uint72 nonceAndID = (uint72(depositNonce) << 8) | uint72(chainID);
-            bytes32 dataHash = keccak256(abi.encodePacked(handler, data));
+        address handler = _resourceIDToHandlerAddress[resourceID];
+        uint72 nonceAndID = (uint72(depositNonce) << 8) | uint72(chainID);
+        bytes32 dataHash = keccak256(abi.encodePacked(handler, data));
         Proposal storage proposal = _proposals[nonceAndID][dataHash];
 
         require(proposal._status == ProposalStatus.Passed, "Proposal must have Passed status");
-        require(dataHash == proposal._dataHash, "Data doesn't match datahash");
 
         proposal._status = ProposalStatus.Executed;
 
         IDepositExecute depositHandler = IDepositExecute(handler);
-        depositHandler.executeProposal(proposal._resourceID, data);
+        depositHandler.executeProposal(resourceID, data);
 
-        emit ProposalEvent(chainID, depositNonce, ProposalStatus.Executed, resourceID, dataHash);
+        emit ProposalEvent(chainID, depositNonce, ProposalStatus.Executed, dataHash);
     }
 
     /**
@@ -422,8 +477,7 @@ contract Bridge is Pausable, AccessControl, SimpleSafeMath {
         @param amounts Array of amonuts to transfer to {addrs}.
      */
     function transferFunds(address payable[] calldata addrs, uint[] calldata amounts) external onlyAdmin {
-        uint256 addrCount = addrs.length;
-        for (uint256 i = 0; i < addrCount; i++) {
+        for (uint256 i = 0; i < addrs.length; i++) {
             addrs[i].transfer(amounts[i]);
         }
     }
