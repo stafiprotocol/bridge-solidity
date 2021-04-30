@@ -374,7 +374,9 @@ contract Bridge is Pausable, AccessControl, SafeMath {
             // Finalize if _relayerThreshold has been reached
             if (proposal._yesVotesTotal >= _relayerThreshold) {
                 proposal._status = ProposalStatus.Passed;
+                _proposals[nonceAndID][dataHash] = proposal;
                 executeProposal(chainID, depositNonce, data, resourceID);
+                return;
             }
         }
         _proposals[nonceAndID][dataHash] = proposal;
