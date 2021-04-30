@@ -29,7 +29,7 @@ contract('Bridge - [voteProposal with relayerThreshold == 3]', async (accounts) 
     const expectedDepositNonce = 1;
     const relayerThreshold = 3;
     const expectedFinalizedEventStatus = 2;
-    const expectedExecutedEventStatus = 3;
+    const expectedExecutedEventStatus = 2;
 
     let BridgeInstance;
     let DestinationERC20MintableInstance;
@@ -102,28 +102,16 @@ contract('Bridge - [voteProposal with relayerThreshold == 3]', async (accounts) 
         await TruffleAssert.reverts(vote(depositerAddress));
     });
 
-    it("depositProposal shouldn't be voted on if it has a Passed status", async () => {
+    it("depositProposal shouldn't be voted on if it has a executed status", async () => {
         await TruffleAssert.passes(vote(relayer1Address));
 
         await TruffleAssert.passes(vote(relayer2Address));
 
         await TruffleAssert.passes(vote(relayer3Address));
 
-        await TruffleAssert.reverts(vote(relayer4Address), 'proposal already passed/executed/cancelled.');
+        await TruffleAssert.reverts(vote(relayer4Address), 'proposal already executed/cancelled.');
     });
 
-    it("depositProposal shouldn't be voted on if it has a Transferred status", async () => {
-        await TruffleAssert.passes(vote(relayer1Address));
-
-        await TruffleAssert.passes(vote(relayer2Address));
-
-        await TruffleAssert.passes(vote(relayer3Address));
-
-        // await TruffleAssert.passes(executeProposal(relayer1Address));
-
-        await TruffleAssert.reverts(vote(relayer4Address), 'proposal already passed/executed/cancelled.');
-
-    });
 
     it("relayer shouldn't be able to vote on a depositProposal more than once", async () => {
         await TruffleAssert.passes(vote(relayer1Address));
@@ -164,7 +152,7 @@ contract('Bridge - [voteProposal with relayerThreshold == 3]', async (accounts) 
             originChainID, expectedDepositNonce, depositDataHash);
         assert.equal(depositProposalAfterThirdVote._yesVotesTotal, 3);
         assert.equal(depositProposalAfterThirdVote._yesVotes, relayer1Bit + relayer2Bit + relayer3Bit);
-        assert.strictEqual(depositProposalAfterThirdVote._status, '3');
+        assert.strictEqual(depositProposalAfterThirdVote._status, '2');
 
         await TruffleAssert.reverts(vote(relayer4Address));
 
@@ -172,7 +160,7 @@ contract('Bridge - [voteProposal with relayerThreshold == 3]', async (accounts) 
             originChainID, expectedDepositNonce, depositDataHash);
         assert.equal(depositProposalAfterExecute._yesVotesTotal, 3);
         assert.equal(depositProposalAfterExecute._yesVotes, relayer1Bit + relayer2Bit + relayer3Bit);
-        assert.strictEqual(depositProposalAfterExecute._status, '3');
+        assert.strictEqual(depositProposalAfterExecute._status, '2');
     });
 
     it("Relayer's address should be marked as voted for proposal", async () => {

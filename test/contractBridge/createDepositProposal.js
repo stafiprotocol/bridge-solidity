@@ -22,7 +22,7 @@ contract('Bridge - [create a deposit proposal (voteProposal) with relayerThresho
     const depositAmount = 10;
     const expectedDepositNonce = 1;
     const relayerThreshold = 1;
-    const expectedCreateEventStatus = 1;
+    const expectedCreateEventStatus = 2;
     
     let BridgeInstance;
     let DestinationERC20MintableInstance;
@@ -114,7 +114,7 @@ contract('Bridge - [create a deposit proposal (voteProposal) with relayerThresho
         const expectedDepositProposal = {
             _yesVotes: originChainRelayerBit.toString(),
             _yesVotesTotal: '1',
-            _status: '3' // exe
+            _status: '2' // exe
         };
 
         await BridgeInstance.voteProposal(
