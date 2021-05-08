@@ -42,7 +42,8 @@ contract Bridge is Pausable, AccessControl, SafeMath {
     mapping(bytes32 => address) public _resourceIDToHandlerAddress;
     // destinationChainID + depositNonce => dataHash => Proposal
     mapping(uint72 => mapping(bytes32 => Proposal)) public _proposals;
-    
+    // original deposit ChainID => oldDepositNonce
+    mapping(uint8 => uint64)  public _oldDepositNonce;
 
     event RelayerThresholdChanged(uint256 indexed newThreshold);
     event RelayerAdded(address indexed relayer);
@@ -181,6 +182,10 @@ contract Bridge is Pausable, AccessControl, SafeMath {
     function adminChangeRelayerThreshold(uint256 newThreshold) external onlyAdmin {
         _relayerThreshold = newThreshold.toUint8();
         emit RelayerThresholdChanged(newThreshold);
+    }
+
+    function adminSetOldDepositNonce(uint8 chainId, uint64 oldDepositNonce) external onlyAdmin {
+        _oldDepositNonce[chainId] = oldDepositNonce;
     }
 
     /**
@@ -347,6 +352,7 @@ contract Bridge is Pausable, AccessControl, SafeMath {
         uint72 nonceAndID = (uint72(depositNonce) << 8) | uint72(chainID);
         Proposal memory proposal = _proposals[nonceAndID][dataHash];
 
+        require(depositNonce > _oldDepositNonce[chainID],"depositNoce is old");
         require(handler != address(0), "no handler for resourceID");
         require(uint(proposal._status) <= 1, "proposal already executed/cancelled");
         require(!_hasVoted(proposal, msg.sender), "relayer already voted");
