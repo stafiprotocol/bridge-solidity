@@ -26,7 +26,7 @@ contract('Bridge - [voteProposal with relayerThreshold == 3]', async (accounts) 
     const depositerAddress = accounts[4];
     const destinationChainRecipientAddress = accounts[4];
     const depositAmount = 10;
-    const expectedDepositNonce = 1;
+    const expectedDepositNonce = 5;
     const relayerThreshold = 3;
     const expectedFinalizedEventStatus = 2;
     const expectedExecutedEventStatus = 2;
@@ -49,13 +49,13 @@ contract('Bridge - [voteProposal with relayerThreshold == 3]', async (accounts) 
                 relayer1Address,
                 relayer2Address,
                 relayer3Address,
-                relayer4Address], 
-                relayerThreshold, 
+                relayer4Address],
+                relayerThreshold,
                 0,
-                100,).then(instance => BridgeInstance = instance),
+                100).then(instance => BridgeInstance = instance),
             ERC20MintableContract.new("token", "TOK").then(instance => DestinationERC20MintableInstance = instance)
         ]);
-        
+
         resourceID = Helpers.createResourceID(DestinationERC20MintableInstance.address, originChainID);
         initialResourceIDs = [resourceID];
         initialContractAddresses = [DestinationERC20MintableInstance.address];
@@ -75,7 +75,7 @@ contract('Bridge - [voteProposal with relayerThreshold == 3]', async (accounts) 
         executeProposal = (relayer) => BridgeInstance.executeProposal(originChainID, expectedDepositNonce, depositData, resourceID, { from: relayer });
     });
 
-    it ('[sanity] bridge configured with threshold and relayers', async () => {
+    it('[sanity] bridge configured with threshold and relayers', async () => {
         assert.equal(await BridgeInstance._chainID(), destinationChainID)
 
         assert.equal(await BridgeInstance._relayerThreshold(), relayerThreshold)
@@ -171,7 +171,7 @@ contract('Bridge - [voteProposal with relayerThreshold == 3]', async (accounts) 
         assert.isTrue(hasVoted);
     });
 
-  
+
     it('Execution successful', async () => {
         await TruffleAssert.passes(vote(relayer1Address));
 
@@ -179,20 +179,37 @@ contract('Bridge - [voteProposal with relayerThreshold == 3]', async (accounts) 
 
         const voteTx = await vote(relayer3Address);
 
-       
+
         TruffleAssert.eventEmitted(voteTx, 'ProposalEvent', (event) => {
             return event.originChainID.toNumber() === originChainID &&
-            event.depositNonce.toNumber() === expectedDepositNonce &&
-            event.status.toNumber() === expectedExecutedEventStatus &&
-            event.dataHash === depositDataHash
+                event.depositNonce.toNumber() === expectedDepositNonce &&
+                event.status.toNumber() === expectedExecutedEventStatus &&
+                event.dataHash === depositDataHash
         });
+    });
+
+
+    it('vote should ok', async () => {
+
+        BridgeInstance.adminSetOldDepositNonce(originChainID, expectedDepositNonce-1);
+
+        await TruffleAssert.passes(vote(relayer1Address));
+
+    });
+
+    it('vote should revert', async () => {
+
+        BridgeInstance.adminSetOldDepositNonce(originChainID, expectedDepositNonce+1);
+
+        await TruffleAssert.reverts(vote(relayer1Address), "depositNoce is old");
+
     });
 
     it('Proposal cannot be executed twice', async () => {
         await vote(relayer1Address);
         await vote(relayer2Address);
         await vote(relayer3Address);
-        
+
         await TruffleAssert.reverts(vote(relayer4Address));
     });
 
