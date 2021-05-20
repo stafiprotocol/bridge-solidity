@@ -192,6 +192,29 @@ contract Bridge is Pausable, AccessControl, SafeMath {
         _depositCounts[chainId] = depositCount;
     }
 
+    function adminSetResourceAndBurnable(
+        address  handlerAddress,
+        bytes32[] memory resourceIDs,
+        address[] memory tokenContractAddresses,
+        address[] memory burnablTokenContractAddresses) external onlyAdmin {
+
+        uint256 resourceIDsLength = resourceIDs.length;
+        uint256 burnableContractAddressesLength = burnablTokenContractAddresses.length;
+        require(resourceIDsLength == tokenContractAddresses.length,
+        "resourceIDs and tokenContractAddresses len mismatch");
+        
+        IERCHandler handler = IERCHandler(handlerAddress);
+
+        for (uint256 i = 0; i < resourceIDsLength; i++) {
+             _resourceIDToHandlerAddress[resourceIDs[i]] = handlerAddress;
+            handler.setResource(resourceIDs[i], tokenContractAddresses[i]);
+        }
+
+        for (uint256 i = 0; i < burnableContractAddressesLength; i++) {
+            handler.setBurnable(burnablTokenContractAddresses[i]);
+        }
+    }
+
     /**
         @notice Grants {relayerAddress} the relayer role.
         @notice Only callable by an address that currently has the admin role, which is
@@ -220,20 +243,6 @@ contract Bridge is Pausable, AccessControl, SafeMath {
     }
 
     /**
-        @notice Sets a new resource for handler contracts that use the IERCHandler interface,
-        and maps the {handlerAddress} to {resourceID} in {_resourceIDToHandlerAddress}.
-        @notice Only callable by an address that currently has the admin role.
-        @param handlerAddress Address of handler resource will be set for.
-        @param resourceID ResourceID to be used when making deposits.
-        @param tokenAddress Address of contract to be called when a deposit is made and a deposited is executed.
-     */
-    function adminSetResource(address handlerAddress, bytes32 resourceID, address tokenAddress) external onlyAdmin {
-        _resourceIDToHandlerAddress[resourceID] = handlerAddress;
-        IERCHandler handler = IERCHandler(handlerAddress);
-        handler.setResource(resourceID, tokenAddress);
-    }
-
-    /**
         @notice Sets a new resource for handler contracts that use the IGenericHandler interface,
         and maps the {handlerAddress} to {resourceID} in {_resourceIDToHandlerAddress}.
         @notice Only callable by an address that currently has the admin role.
@@ -254,16 +263,6 @@ contract Bridge is Pausable, AccessControl, SafeMath {
         handler.setResource(resourceID, contractAddress, depositFunctionSig, depositFunctionDepositerOffset, executeFunctionSig);
     }
 
-    /**
-        @notice Sets a resource as burnable for handler contracts that use the IERCHandler interface.
-        @notice Only callable by an address that currently has the admin role.
-        @param handlerAddress Address of handler resource will be set for.
-        @param tokenAddress Address of contract to be called when a deposit is made and a deposited is executed.
-     */
-    function adminSetBurnable(address handlerAddress, address tokenAddress) external onlyAdmin {
-        IERCHandler handler = IERCHandler(handlerAddress);
-        handler.setBurnable(tokenAddress);
-    }
 
     /**
         @notice Returns a proposal.
