@@ -188,6 +188,10 @@ contract Bridge is Pausable, AccessControl, SafeMath {
         _oldDepositNonce[chainId] = oldDepositNonce;
     }
 
+    function adminSetDepositCount(uint8 chainId, uint64 depositCount) external onlyAdmin {
+        _depositCounts[chainId] = depositCount;
+    }
+
     /**
         @notice Grants {relayerAddress} the relayer role.
         @notice Only callable by an address that currently has the admin role, which is
