@@ -27,37 +27,11 @@ contract ERC20Handler is IDepositExecute, HandlerHelpers, ERC20Safe {
 
     /**
         @param bridgeAddress Contract address of previously deployed Bridge.
-        @param initialResourceIDs Resource IDs are used to identify a specific contract address.
-        These are the Resource IDs this contract will initially support.
-        @param initialContractAddresses These are the addresses the {initialResourceIDs} will point to, and are the contracts that will be
-        called to perform various deposit calls.
-        @param burnableContractAddresses These addresses will be set as burnable and when {deposit} is called, the deposited token will be burned.
-        When {executeProposal} is called, new tokens will be minted.
-
-        @dev {initialResourceIDs} and {initialContractAddresses} must have the same length (one resourceID for every address).
-        Also, these arrays must be ordered in the way that {initialResourceIDs}[0] is the intended resourceID for {initialContractAddresses}[0].
      */
     constructor(
-        address          bridgeAddress,
-        bytes32[] memory initialResourceIDs,
-        address[] memory initialContractAddresses,
-        address[] memory burnableContractAddresses
+        address          bridgeAddress
     ) public {
-        uint256 initialResourceIDsLength = initialResourceIDs.length;
-        uint256 burnableContractAddressesLength = burnableContractAddresses.length;
-
-        require(initialResourceIDsLength == initialContractAddresses.length,
-        "initialResourceIDs and initialContractAddresses len mismatch");
-
         _bridgeAddress = bridgeAddress;
-
-        for (uint256 i = 0; i < initialResourceIDsLength; i++) {
-            _setResource(initialResourceIDs[i], initialContractAddresses[i]);
-        }
-
-        for (uint256 i = 0; i < burnableContractAddressesLength; i++) {
-            _setBurnable(burnableContractAddresses[i]);
-        }
     }
 
     /**

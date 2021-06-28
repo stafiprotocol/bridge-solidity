@@ -1,6 +1,6 @@
-pragma solidity 0.6.12;
+// SPDX-License-Identifier: MIT
 
-// SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.6.12;
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -10,7 +10,7 @@ pragma solidity 0.6.12;
  * https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/math/SafeMath.sol
  */
 
-contract SimpleSafeMath {
+contract SafeMath {
 
     /**
      * @dev Returns the subtraction of two unsigned integers, reverting on
@@ -40,5 +40,4 @@ contract SimpleSafeMath {
 
         return c;
     }
-
 }
