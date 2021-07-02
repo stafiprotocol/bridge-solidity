@@ -3,3 +3,7 @@ build/
 node_modules/
 .deps/
 .idea/
+cache/
+.env
+secrets.json
+arguments.js
