@@ -5,6 +5,9 @@ const { config, ethers } = require("hardhat");
 const { utils } = require("ethers");
 const R = require("ramda");
 
+const BscChainId = 3
+const EthChainId = 2
+
 const main = async () => {
 
   console.log("\n\n 📡 Deploying...\n");
@@ -14,10 +17,11 @@ const main = async () => {
   // 该合约不需要参数
   // const FISToken = await deploy("FISToken");
   // const RFISToken = await deploy("RFISToken");
+  const BEP20FISToken = await deploy("BEP20FISToken");
 
   /// add in constructor args like Bridge or erc20Handler
-  // const Bridge = await deploy("Bridge", [3, ["0xBd39f5936969828eD9315220659cD11129071814", "0xBca9567A9e8D5F6F58C419d32aF6190F74C880e6"], 2, 0, 100000]) // <-- add in constructor args like line 16 vvvv
-  const ERC20Handler = await deploy("ERC20Handler", ["0xb5Dc44e4e680d9a485fCbe1f465eA0F65287FBc0"])
+  // const Bridge = await deploy("Bridge", [EthChainId, ["0xBd39f5936969828eD9315220659cD11129071814", "0xBca9567A9e8D5F6F58C419d32aF6190F74C880e6"], 2, 0, 100000]) // <-- add in constructor args like line 16 vvvv
+  // const ERC20Handler = await deploy("ERC20Handler", ["0xe169c92136f45617266789251Ef4EA4604Abc96c"])
 
   console.log(
     " 💾  Artifacts (address, abi, and args) saved to: ",

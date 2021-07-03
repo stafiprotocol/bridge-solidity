@@ -18,18 +18,19 @@ yarn
 yarn hardhat compile
 ```
 
-### deploy to bsc
+### deploy to bsc/eth
 
 Preparation:
-- create `secrets.json` file if it does not exist and set related fields. refer to secrets.json.example.
-- modify src/deploy/deploy.js to deploy the contracts.
+- Here to get bsc apikey: https://bscscan.com/myapikey, signup is needed. etherscanApiKey is different from bsc to eth, so two apikeys are needed for two networks.
+- create `secrets.json` file if it does not exist and set related fields. refer to secrets.json.example. 
+- modify src/deploy/deploy.js to deploy the contracts. 
 - use this command to deploy to the bsc-testnet, replace the argument network to deploy to other networks.
 
 ```bash
 npx hardhat run --network bsctestnet src/deploy/deploy.js
 ```
 
-- verif(needed). create `arguments.js` file, refer to `arguments.js.example`, put your contract constructor-args into the module.exports.
+- verif(necessary for bsc). create `arguments.js` file, refer to `arguments.js.example`, put your contract constructor-args into the module.exports.
 argument can be removed if your contract constructor has no arguments at all.
 
 ```bash
