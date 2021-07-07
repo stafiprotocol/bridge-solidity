@@ -3,7 +3,7 @@ pragma solidity >=0.6.0 <0.8.0;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "./IBEP20.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
