@@ -3,7 +3,7 @@ pragma solidity >=0.6.0 <0.8.0;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "./BEP20.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/GSN/Context.sol";
 
 /**
  * @dev Extension of {BEP20} that allows token holders to destroy both their own

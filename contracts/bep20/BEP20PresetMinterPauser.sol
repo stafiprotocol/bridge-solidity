@@ -5,8 +5,8 @@ pragma solidity >=0.6.0 <0.8.0;
 import "./BEP20.sol";
 import "./BEP20Burnable.sol";
 import "./BEP20Pausable.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "../utils/AccessControl.sol";
+import "@openzeppelin/contracts/GSN/Context.sol";
 
 /**
  * @dev {BEP20} token, including:
