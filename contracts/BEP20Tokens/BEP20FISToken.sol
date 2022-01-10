@@ -5,7 +5,5 @@ pragma solidity 0.6.12;
 import "../bep20/BEP20PresetMinterPauser.sol";
 
 contract BEP20FISToken is BEP20PresetMinterPauser {
-    constructor() BEP20PresetMinterPauser("StaFi", "FIS") public {
-        mint(msg.sender, 100000000000000000000000000);
-    }
+    constructor() BEP20PresetMinterPauser("StaFi", "FIS") public {}
 }
