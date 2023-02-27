@@ -88,10 +88,13 @@ module.exports = {
       chainId: 100,
       gasPrice: 1000000000,
       accounts: [privateKey]
+    },
+    bscmainnet: {
+      url: `https://rpc.ankr.com/bsc`,
     }
   },
   solidity: {
-  version: "0.6.12",
+  version: "0.6.4",
   settings: {
     optimizer: {
       enabled: true

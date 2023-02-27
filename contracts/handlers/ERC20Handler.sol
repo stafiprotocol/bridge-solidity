@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.6.4;
 pragma experimental ABIEncoderV2;
 
 // SPDX-License-Identifier: GPL-3.0-only

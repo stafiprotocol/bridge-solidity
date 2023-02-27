@@ -4,7 +4,7 @@
   "description": "",
   "repository": "https://github.com/stafiprotocol/bridge-solidity",
   "scripts": {
-    "compile": "truffle compile"
+    "compile": "hardhat compile"
   },
   "directories": {
     "test": "test"
