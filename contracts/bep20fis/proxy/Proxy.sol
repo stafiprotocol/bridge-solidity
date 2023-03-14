@@ -1,5 +1,5 @@
 pragma solidity ^0.6.0;
-
+// SPDX-License-Identifier: GPL-3.0-only
 /**
  * @dev This abstract contract provides a fallback function that delegates all calls to another contract using the EVM
  * instruction `delegatecall`. We refer to the second contract as the _implementation_ behind the proxy, and it has to

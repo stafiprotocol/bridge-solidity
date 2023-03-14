@@ -1,5 +1,5 @@
 pragma solidity ^0.6.2;
-
+// SPDX-License-Identifier: GPL-3.0-only
 /**
  * @dev Collection of functions related to the address type
  */

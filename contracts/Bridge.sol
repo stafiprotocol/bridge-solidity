@@ -1,4 +1,4 @@
-pragma solidity 0.6.4;
+pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 // SPDX-License-Identifier: GPL-3.0-only
@@ -194,9 +194,9 @@ contract Bridge is Pausable, AccessControl, SafeMath {
 
     function adminSetResourceAndBurnable(
         address  handlerAddress,
-        bytes32[] calldata resourceIDs,
-        address[] calldata tokenContractAddresses,
-        address[] calldata burnablTokenContractAddresses) external onlyAdmin {
+        bytes32[] memory resourceIDs,
+        address[] memory tokenContractAddresses,
+        address[] memory burnablTokenContractAddresses) external onlyAdmin {
 
         uint256 resourceIDsLength = resourceIDs.length;
         uint256 burnableContractAddressesLength = burnablTokenContractAddresses.length;

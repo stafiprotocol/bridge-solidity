@@ -1,5 +1,5 @@
 pragma solidity ^0.6.0;
-
+// SPDX-License-Identifier: GPL-3.0-only
 /*
  * @dev Provides information about the current execution context, including the
  * sender of the transaction and its data. While these are generally available

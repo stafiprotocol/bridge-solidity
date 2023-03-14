@@ -1,114 +1,90 @@
-const { mnemonic, privateKey, infuraProjectId, etherscanApiKey } = require('./secrets.json');
-
-require("@nomiclabs/hardhat-waffle");
-require('@nomiclabs/hardhat-ethers');
+require("hardhat-contract-sizer")
+require("@nomiclabs/hardhat-ethers");
+require("@nomiclabs/hardhat-web3");
 require("@nomiclabs/hardhat-etherscan");
 
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
-task("accounts", "👩🕵👨🙋👷 Prints the list of accounts (only for localhost)", async () => {
-  const accounts = await ethers.getSigners();
+// set proxy
+const { ProxyAgent, setGlobalDispatcher } = require("undici");
+const proxyAgent = new ProxyAgent('http://127.0.0.1:7890'); // change to yours
+setGlobalDispatcher(proxyAgent)
 
-  for (const account of accounts) {
-    console.log(account.address);
-  }
-  console.log("👩🕵 👨🙋👷 these accounts only for localhost network.");
-  console.log('To see their private keys🔑🗝 when you run "npx hardhat node."');
-});
-
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
-
-/**
- * @type import('hardhat/config').HardhatUserConfig
- */
+/** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  etherscan: {
-    // Your API key for Etherscan
-    // Obtain one at https://etherscan.io/
-    apiKey: etherscanApiKey
+  solidity: {
+    version: "0.6.12",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }
   },
-  defaultNetwork: "bsctestnet", // <-- change here for other network, default use hardhat network.
   networks: {
-  	localhost: {
-      url: "http://127.0.0.1:8545"
-    },
     hardhat: {
+      forking: {
+        url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+        blockNumber: 15431470
+      }
     },
-    ropsten: {
-      url: "https://ropsten.infura.io/v3/" + infuraProjectId,
-      chainId: 3,
-      gasPrice: 20000000000,
-      // accounts: {mnemonic: mnemonic}
-      accounts: [privateKey]
+    local: {
+      url: 'http://127.0.0.1:8545',
+      accounts: [
+        '7c12708ee2f423e86d3b77e6bef12907ca61b2d97a7195f93c1137dc08098b74', // superuser
+        '13d28b99efc64e66d4bb549f2dba1324305d47629b2141f1c16163f6ff6a2206', // trustnode
+        '45a690ae0fab855d60f592b2cd561a730a1d3ab60e138c5366b9e27778c066d9', // supernode
+        '9e078940152584a642aaed17ebb97509274f874e176695de947ade3a1d8fe353', // 
+        'b7d6bef9fec45408c5d6c7f3182ab409f0774549481179ee627e87b8ec43980f', // 
+        'cf9021015de4fe7559b981e098f46659b7f9a9dc28e89b7f554936c7aadaf822', // 
+      ],
     },
-    rinkeby: {
-      url: "https://rinkeby.infura.io/v3/" + infuraProjectId,
-      chainId: 4,
-      gasPrice: 20000000000,
-      accounts: [privateKey]
+    ethmainnet: {
+      url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+    },
+    dev: {
+      url: 'https://test-eth-node.stafi.io',
+      accounts: [
+        '63e957ac278682192b23f05f66c15d71082852102ead1e281e0e0522d25a4a4d', // superuser
+        '13d28b99efc64e66d4bb549f2dba1324305d47629b2141f1c16163f6ff6a2206', // trustnode
+        '45a690ae0fab855d60f592b2cd561a730a1d3ab60e138c5366b9e27778c066d9', // supernode
+        '9e078940152584a642aaed17ebb97509274f874e176695de947ade3a1d8fe353', // user1
+        'b7d6bef9fec45408c5d6c7f3182ab409f0774549481179ee627e87b8ec43980f', // 
+        'cf9021015de4fe7559b981e098f46659b7f9a9dc28e89b7f554936c7aadaf822', // 
+      ],
     },
     goerli: {
-      url: "https://goerli.infura.io/v3/" + infuraProjectId,
-      chainId: 5,
-      gasPrice: 20000000000,
-      accounts: [privateKey]
+      url: `https://goerli.infura.io/v3/${process.env.INFURA_KEY}`,
     },
-    kovan: {
-      url: "https://kovan.infura.io/v3/" + infuraProjectId,
-      chainId: 42,
-      gasPrice: 20000000000,
-      accounts: [privateKey]
-    },
-    bsc: {
-      url: "https://bsc-dataseed.binance.org/",
-      chainId: 56,
-      gasPrice: 1000000000,
-      accounts: [privateKey]
-    },
-    bsctestnet: {
-      url: "https://data-seed-prebsc-2-s3.binance.org:8545/",
-      chainId: 97,
-      accounts: [privateKey]
-    },
-    poa: {
-      url: "https://core.poanetwork.dev",
-      chainId: 99,
-      gasPrice: 1000000000,
-      accounts: [privateKey]
-    },
-    poasokol: {
-      url: "https://sokol.poa.network",
-      chainId: 77,
-      gasPrice: 20000000000,
-      accounts: [privateKey]
-    },
-    xdai: {
-      url: "https://dai.poa.network/",
-      chainId: 100,
-      gasPrice: 1000000000,
-      accounts: [privateKey]
+    zhejiang: {
+      url: `https://rpc.zhejiang.ethpandaops.io`,
+      accounts: [
+        '63e957ac278682192b23f05f66c15d71082852102ead1e281e0e0522d25a4a4d', // superuser
+        '13d28b99efc64e66d4bb549f2dba1324305d47629b2141f1c16163f6ff6a2206', // trustnode
+        '45a690ae0fab855d60f592b2cd561a730a1d3ab60e138c5366b9e27778c066d9', // supernode
+        '9e078940152584a642aaed17ebb97509274f874e176695de947ade3a1d8fe353', // user1
+        'b7d6bef9fec45408c5d6c7f3182ab409f0774549481179ee627e87b8ec43980f', // 
+        'cf9021015de4fe7559b981e098f46659b7f9a9dc28e89b7f554936c7aadaf822', // proxyadmin 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc
+      ],
     },
     bscmainnet: {
       url: `https://rpc.ankr.com/bsc`,
     }
   },
-  solidity: {
-  version: "0.6.4",
-  settings: {
-    optimizer: {
-      enabled: true
-    }
-   }
-  },
+  defaultNetwork: "hardhat",
   paths: {
     sources: "./contracts",
     tests: "./test",
     cache: "./cache",
     artifacts: "./artifacts"
   },
-  mocha: {
-    timeout: 20000
+  contractSizer: {
+    alphaSort: true,
+    runOnCompile: false,
+    disambiguatePaths: false,
+  },
+  etherscan: {
+    // Your API key for Etherscan
+    // Obtain one at https://etherscan.io/
+    apiKey: `${process.env.ETHERSCAN_KEY}`
   }
 };
 

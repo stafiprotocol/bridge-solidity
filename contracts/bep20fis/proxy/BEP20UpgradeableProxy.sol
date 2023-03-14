@@ -1,5 +1,5 @@
 pragma solidity ^0.6.0;
-
+// SPDX-License-Identifier: GPL-3.0-only
 import "./TransparentUpgradeableProxy.sol";
 
 contract BEP20UpgradeableProxy is TransparentUpgradeableProxy {
